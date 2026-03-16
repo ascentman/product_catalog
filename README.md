@@ -1,149 +1,203 @@
 # Product Catalog
 
-A production-quality Flutter product catalog application demonstrating clean architecture, BLoC state management, offline support, and responsive adaptive layouts.
+A production-quality Flutter product catalog app demonstrating clean architecture, BLoC/Cubit state management, offline caching, responsive adaptive layouts, and a custom design system.
 
 ---
 
-## 1. Setup and Run Instructions
+## Screenshots
+
+| iPhone — Product List | iPad — Master / Detail |
+|---|---|
+| ![iPhone product list](screenshots/iphone_product_list.png) | ![iPad master detail](screenshots/ipad_master_detail.png) |
+
+**Features visible:**
+- Masonry grid with variable-height cards, discount badges, star ratings
+- Category filter chips with animated selection
+- Search bar
+- Light / dark theme toggle
+- iPad master-detail split view with resizable panel divider
+- Image gallery with page indicators and thumbnail strip
+
+---
+
+## 1. Setup and Run
 
 **Requirements:**
-- Flutter 3.32.4 (or later 3.x)
-- Dart SDK 3.8.1+
-- Xcode (for iOS) or Android Studio (for Android)
-
-**Steps:**
+- Flutter 3.32.4+ / Dart 3.8.1+
+- Xcode 16+ (iOS / macOS) or Android Studio (Android)
 
 ```bash
-# 1. Clone or navigate to the project
-cd /path/to/product_catalog
-
-# 2. Install dependencies
+# Install dependencies
 flutter pub get
 
-# 3. Run on a connected device or simulator
+# Run on a connected device / simulator
 flutter run
 
-# 4. Run tests
-flutter test
-
-# 5. Analyze code
+# Analyze
 flutter analyze
-```
 
-**Deep link example (iOS Simulator):**
-```bash
-xcrun simctl openurl booted "productcatalog://products/1"
+# Test
+flutter test
 ```
 
 **Build release:**
 ```bash
-flutter build apk --release          # Android
-flutter build ios --release          # iOS
+flutter build apk --release   # Android
+flutter build ios --release   # iOS
+flutter build macos --release # macOS
 ```
 
 ---
 
-## 2. Architecture Overview
+## 2. Deep Links
+
+The app registers the custom URL scheme **`productcatalog`**.
+
+### Supported routes
+
+| URL | Screen |
+|-----|--------|
+| `productcatalog:///` | Product list |
+| `productcatalog:///products/{id}` | Product detail (e.g. id = 1–100) |
+| `productcatalog:///showcase` | Component showcase |
+
+> Triple slash (`///`) is required — it sets an empty host so GoRouter receives the path as `/products/{id}` rather than treating `products` as the hostname.
+
+### iOS Simulator — terminal
+
+```bash
+xcrun simctl openurl booted "productcatalog:///products/5"
+xcrun simctl openurl booted "productcatalog:///showcase"
+```
+
+### iOS Simulator — on-device
+
+Paste any URL above into **Safari's address bar** and tap Go. iOS will hand the custom scheme off to the app.
+
+### Android emulator
+
+```bash
+adb shell am start \
+  -W -a android.intent.action.VIEW \
+  -d "productcatalog:///products/5"
+```
+
+### iOS configuration (`ios/Runner/Info.plist`)
+
+```xml
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
+    <key>CFBundleURLName</key>
+    <string>com.techgadol.productCatalog</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>productcatalog</string>
+    </array>
+  </dict>
+</array>
+```
+
+---
+
+## 3. Architecture Overview
 
 The app follows **Clean Architecture** with three clearly separated layers:
 
-### Layer Structure
-
 ```
 lib/
-  core/              # Cross-cutting: DI, networking, utilities, constants
-  data/              # Data layer: models, datasources (remote/local), repository impl
-  domain/            # Domain layer: entities, repository interfaces, use cases
-  features/          # Presentation layer: cubits, widgets, screens per feature
-  design_system/     # Shared UI: theme, reusable components
-  app/               # App wiring: router, MaterialApp
+  core/           # DI (GetIt), networking (Dio), error types
+  data/           # Models, remote datasource (Dio), local datasource (Hive), repository impl
+  domain/         # Entities, repository interface, use cases
+  features/       # Presentation: cubits + screens + widgets, one folder per feature
+  design_system/  # Shared UI: theme tokens, reusable components
+  app/            # Router (GoRouter), MaterialApp wiring
 ```
 
-### State Management (Bloc/Cubit)
+### State Management — Bloc/Cubit
 
-- `ProductListCubit` manages the product list screen state with statuses: initial, loading, loadingMore, loaded, error, empty. Handles pagination (append-on-scroll), search (debounced 500ms), category filtering.
-- `ProductDetailCubit` fetches a single product by ID with loading/loaded/error states.
-- `ThemeCubit` manages light/dark/system theme mode, provided at the root.
+| Cubit | Responsibility |
+|-------|---------------|
+| `ProductListCubit` | Pagination, search (debounced 500 ms), category filter |
+| `ProductDetailCubit` | Single product fetch by ID |
+| `ThemeCubit` | Light / dark / system theme mode |
 
-### Navigation (GoRouter 15.x)
+### Navigation — GoRouter 15.x
 
 ```
-/                       -> ProductListScreen
-/products/:id           -> ProductDetailScreen (phone only; tablet renders inline)
-/showcase               -> ShowcaseScreen
+/                  →  ProductListScreen
+/products/:id      →  ProductDetailScreen  (phone: pushed; tablet: right pane)
+/showcase          →  ShowcaseScreen
 ```
 
-Deep links are handled by GoRouter's path parameter extraction. On tablets (width >= 768px), `ProductDetailScreen` is rendered in the right pane of a master-detail layout without pushing a route.
+`AppRoute` enum in `app/router/app_routes.dart` owns all path and name strings — no hardcoded strings at call sites.
 
-### Dependency Injection (GetIt)
+### Dependency Injection — GetIt
 
-All dependencies are registered in `core/di/injection_container.dart` using `GetIt`. Cubits are registered as factories (new instance per creation). Repository, use cases, and data sources are singletons.
+All wiring lives in `core/di/injection_container.dart`. Cubits are **factories**; repository, use cases, and datasources are **singletons**.
 
-### Offline Support (Hive)
+### Offline Support — Hive
 
-Two Hive `Box<String>` instances (`product_cache`, `cache_meta`) store JSON-serialised responses with timestamps. Cache keys follow predictable patterns (`products_page_{skip}_{limit}`, `product_{id}`, `search_{query}_{category}`). Entries expire after 1 hour. When data is served from cache, a yellow banner informs the user.
+Two `Box<String>` instances (`product_cache`, `cache_meta`) store JSON-serialised responses with millisecond timestamps. Cache TTL is **1 hour**. On cache miss or expiry the app fetches from the network and repopulates the cache. When offline with no valid cache, a `NetworkException` surfaces to the error state.
 
 ---
 
-## 3. Design System Rationale
+## 4. Design System
 
-### Material 3
+| Token file | Contents |
+|------------|----------|
+| `app_colors.dart` | Semantic color constants (primary, error, surface, text variants…) |
+| `app_text_styles.dart` | Material 3 type scale (Display → Label) |
+| `app_spacing.dart` | 8-pt grid constants (xs=4 … xxxl=32) |
+| `app_theme.dart` | `lightTheme` / `darkTheme` `ThemeData` instances |
 
-The app uses Material 3 (`useMaterial3: true`) with a blue/indigo seed color (`#2563EB`) generating a full `ColorScheme`. This provides adaptive colors for both light and dark themes without manual override of every surface color.
+Material 3 is enabled (`useMaterial3: true`) with a blue/indigo seed color (`#2563EB`). Theme transitions are animated via `themeAnimationDuration` on `MaterialApp.router`.
 
-### Color Tokens (`app_colors.dart`)
+### Key components
 
-All colors are declared as constants on `AppColors`. This creates a single source of truth and prevents magic color literals scattered throughout the codebase. Colors are semantically named (primary, secondary, success, warning, error, surface variants, text variants) rather than by shade value.
-
-### Typography (`app_text_styles.dart`)
-
-Text styles follow the Material 3 type scale (Display, Headline, Title, Body, Label). They are defined once and referenced by name, making global typography changes trivial.
-
-### Spacing (`app_spacing.dart`)
-
-Spacing uses an 8-point grid system with named constants (xs=4, sm=8, md=12, lg=16, xl=20, xxl=24, xxxl=32) to ensure visual consistency.
-
-### Component API Choices
-
-- `ProductCard`: accepts a `Product` entity and `VoidCallback onTap`. Hero animation is embedded directly in the card, wrapping `CachedNetworkImage` to enable seamless list-to-detail transitions.
-- `CategoryChip`: stateless, controlled component with `isSelected` prop. Uses `AnimatedContainer` for smooth selection transitions.
-- `AppButton`: variants (primary/secondary/text) are expressed via an enum and named constructors, keeping call sites readable.
-- `SkeletonLoader`/`ProductCardSkeleton`: uses the `shimmer` package to produce a shimmer effect matching the `ProductCard` dimensions exactly.
-
-### Theming
-
-`AppTheme` provides static `lightTheme` and `darkTheme` `ThemeData` instances. The root `MaterialApp.router` receives both; `ThemeCubit` controls the active `ThemeMode`. `AnimatedTheme` is used inside the `App` widget so theme transitions are animated automatically.
+- **`ProductCard`** — masonry-friendly intrinsic height, Hero transition, discount badge, star rating, `CachedNetworkImage` with shimmer placeholder.
+- **`ImageGallery`** — `PageView` with dot indicators and thumbnail strip. Hero tag is unique per product; embedded (tablet) variant uses a distinct tag to avoid duplicate-Hero errors.
+- **`SkeletonGrid`** — `MasonryGridView` of shimmer placeholders matching card proportions.
+- **`CategoryFilterBar`** — horizontal `ListView` of `AnimatedContainer` chips.
+- **`AppSearchBar`** — debounced text field forwarding to `ProductListCubit.search`.
 
 ---
 
-## 4. Limitations and Known Shortcuts
+## 5. Responsive Layout
 
-1. **No Hive type adapters / code generation**: Products are cached as JSON strings in a `Box<String>` rather than using generated `TypeAdapter` classes. This is simpler and avoids build_runner runs but is slower for large datasets.
+| Breakpoint | Layout |
+|------------|--------|
+| < 768 px (phone) | Single-column stack, product detail pushed via GoRouter |
+| ≥ 768 px (tablet / desktop) | Master-detail split; left panel width is **drag-resizable** (250–600 px, default 380 px) |
 
-2. **No persistent theme preference**: The selected theme mode is held in-memory by `ThemeCubit` and resets to system default on restart. A real app would persist it via `SharedPreferences` or Hive.
-
-3. **Scroll position not persisted across navigation**: `PageStorageKey` is used to preserve scroll within a single session, but navigating away and back on phone (full push) resets scroll. A Cubit-held `ScrollController` or Router shell route would fix this.
-
-4. **No authentication or cart**: The app is read-only catalog browsing without user accounts, shopping cart, or checkout flow.
-
-5. **No pull-to-refresh on detail screen**: Refresh is only available on the list screen via `RefreshIndicator`.
-
-6. **Image caching via `CachedNetworkImage`**: Disk cache management (max size, eviction) uses package defaults, not custom configuration.
-
-7. **Error boundary**: Individual widget errors propagate to screen-level error states. A production app would benefit from a global `FlutterError` handler and crash reporting (e.g. Firebase Crashlytics).
-
-8. **No localization (l10n)**: Strings are hard-coded as English constants in `app_constants.dart`. An `AppLocalizations` setup would be the next step for internationalisation.
+`AdaptiveLayout` in `features/responsive/adaptive_layout.dart` selects the appropriate layout based on `MediaQuery` width.
 
 ---
 
-## 5. AI Tools Usage
+## 6. Limitations
 
-This application was built with the assistance of **Claude Sonnet 4.6** (Claude Code, Anthropic). The AI was used to:
+1. **No Hive type adapters** — products are cached as JSON strings rather than generated `TypeAdapter` classes (simpler, avoids build_runner complexity).
+2. **Theme not persisted** — `ThemeCubit` resets to system default on cold start.
+3. **Scroll position** — preserved within a session via `PageStorageKey`; resets after full navigation pop on phone.
+4. **No cart / auth** — read-only catalog browsing.
+5. **No l10n** — strings are English constants; `AppLocalizations` would be the next step.
 
-- Generate the complete project scaffolding, directory structure, and all source files from an architectural specification.
-- Implement all layers (data, domain, presentation) simultaneously, maintaining consistent naming conventions and import paths across the codebase.
-- Write unit tests (Bloc tests with `bloc_test`/`mocktail`, model parsing tests) and widget tests for `ProductCard` and `CategoryChip`.
-- Identify and fix compilation errors reported by `flutter analyze` in a single feedback loop (CardTheme -> CardThemeData, unused imports, unnecessary casts, type mismatches).
-- Fix widget test layout overflow issues by adjusting test container dimensions.
+---
 
-The human provided the full architectural specification and reviewed/approved each batch of generated files. The architecture, dependency choices, component APIs, and feature scope were specified by the human; Claude translated them into working Dart code.
+## 7. CI
+
+GitHub Actions workflow (`.github/workflows/test.yml`) runs on every push and pull request:
+
+1. Checkout → setup Flutter 3.32.4
+2. `flutter pub get`
+3. `flutter analyze --fatal-infos`
+4. `flutter test --coverage`
+5. Upload coverage report to Codecov
+
+---
+
+## 8. AI Tools
+
+Built with **Claude Sonnet 4.6** (Claude Code, Anthropic) — used for scaffolding, implementation across all layers, test generation, and iterative bug fixing. Architecture, dependency choices, and feature scope were specified and reviewed by the human developer.
