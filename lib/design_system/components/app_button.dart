@@ -49,8 +49,12 @@ class AppButton extends StatelessWidget {
   }) : variant = ButtonVariant.text;
 
   Widget _buildChild() {
-    if (isLoading) {
-      return const SizedBox(
+    if (isLoading) return _loadingSpinner();
+    if (leadingIcon != null) return _iconLabelRow();
+    return Text(label);
+  }
+
+  Widget _loadingSpinner() => const SizedBox(
         height: 18,
         width: 18,
         child: CircularProgressIndicator(
@@ -58,10 +62,8 @@ class AppButton extends StatelessWidget {
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       );
-    }
 
-    if (leadingIcon != null) {
-      return Row(
+  Widget _iconLabelRow() => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(leadingIcon, size: 18),
@@ -69,10 +71,6 @@ class AppButton extends StatelessWidget {
           Text(label),
         ],
       );
-    }
-
-    return Text(label);
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/router/app_routes.dart';
 import '../../../core/di/injection_container.dart';
 import '../../../core/di/theme_cubit.dart';
 import '../../../design_system/components/empty_state.dart';
@@ -33,7 +34,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       create: (_) => sl<ProductListCubit>()..loadProducts(),
       child: AdaptiveLayout(
         phoneLayout: (context) => _PhoneLayout(
-          onProductSelected: (product) => context.push('/products/${product.id}'),
+          onProductSelected: (product) => context.push(AppRoute.productDetail.location(product.id)),
         ),
         tabletLayout: (context) => _TabletLayout(
           selectedProductId: _selectedProductId,
@@ -60,7 +61,7 @@ class _PhoneLayout extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.color_lens_outlined),
             tooltip: 'Component Showcase',
-            onPressed: () => context.push('/showcase'),
+            onPressed: () => context.push(AppRoute.showcase.location()),
           ),
           _ThemeToggleButton(),
         ],
@@ -88,7 +89,7 @@ class _TabletLayout extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.color_lens_outlined),
             tooltip: 'Component Showcase',
-            onPressed: () => context.push('/showcase'),
+            onPressed: () => context.push(AppRoute.showcase.location()),
           ),
           _ThemeToggleButton(),
         ],
@@ -167,19 +168,32 @@ class _ProductListBody extends StatelessWidget {
               ),
             const SizedBox(height: AppSpacing.sm),
             Expanded(
-              child: _buildContent(context, state, cubit),
+              child: _ProductListContent(
+                state: state,
+                cubit: cubit,
+                onProductSelected: onProductSelected,
+              ),
             ),
           ],
         );
       },
     );
   }
+}
 
-  Widget _buildContent(
-    BuildContext context,
-    ProductListState state,
-    ProductListCubit cubit,
-  ) {
+class _ProductListContent extends StatelessWidget {
+  final ProductListState state;
+  final ProductListCubit cubit;
+  final ValueChanged<Product> onProductSelected;
+
+  const _ProductListContent({
+    required this.state,
+    required this.cubit,
+    required this.onProductSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     switch (state.status) {
       case ProductListStatus.initial:
       case ProductListStatus.loading:

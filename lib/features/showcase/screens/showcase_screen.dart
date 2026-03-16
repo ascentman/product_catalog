@@ -38,7 +38,6 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
     images: ['https://cdn.dummyjson.com/product-images/1/1.jpg'],
   );
 
-
   @override
   Widget build(BuildContext context) {
     final theme = _isDark ? AppTheme.darkTheme : AppTheme.lightTheme;
@@ -72,43 +71,54 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _SectionHeader(title: 'Buttons', theme: theme),
-            _buildButtonsSection(theme),
+            _ButtonsSection(theme: theme),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Product Cards', theme: theme),
-            _buildProductCardsSection(theme),
+            _ProductCardsSection(theme: theme, sampleProduct: _sampleProduct),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Category Chips', theme: theme),
-            _buildCategoryChipsSection(theme),
+            _CategoryChipsSection(
+              theme: theme,
+              selectedChip: _selectedChip,
+              onChipSelected: (slug) => setState(() => _selectedChip = slug),
+            ),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Star Ratings', theme: theme),
-            _buildStarRatingsSection(theme),
+            _StarRatingsSection(theme: theme),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Badges', theme: theme),
-            _buildBadgesSection(theme),
+            _BadgesSection(theme: theme),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Skeleton Loader', theme: theme),
-            _buildSkeletonSection(theme),
+            _SkeletonSection(theme: theme),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Error State', theme: theme),
-            _buildErrorSection(theme),
+            _ErrorSection(theme: theme),
             const SizedBox(height: AppSpacing.xxl),
 
             _SectionHeader(title: 'Empty State', theme: theme),
-            _buildEmptySection(theme),
+            _EmptySection(theme: theme),
             const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildButtonsSection(ThemeData theme) {
+class _ButtonsSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _ButtonsSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: theme,
       child: Wrap(
@@ -129,8 +139,16 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
       ),
     );
   }
+}
 
-  Widget _buildProductCardsSection(ThemeData theme) {
+class _ProductCardsSection extends StatelessWidget {
+  final ThemeData theme;
+  final Product sampleProduct;
+
+  const _ProductCardsSection({required this.theme, required this.sampleProduct});
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: theme,
       child: Row(
@@ -138,7 +156,7 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
         children: [
           Expanded(
             child: ProductCard(
-              product: _sampleProduct,
+              product: sampleProduct,
               onTap: () {},
             ),
           ),
@@ -148,8 +166,21 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
       ),
     );
   }
+}
 
-  Widget _buildCategoryChipsSection(ThemeData theme) {
+class _CategoryChipsSection extends StatelessWidget {
+  final ThemeData theme;
+  final String? selectedChip;
+  final ValueChanged<String?> onChipSelected;
+
+  const _CategoryChipsSection({
+    required this.theme,
+    required this.selectedChip,
+    required this.onChipSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     const chips = ['All', 'Electronics', 'Clothing', 'Accessories', 'Furniture'];
     return Theme(
       data: theme,
@@ -160,15 +191,22 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
           final slug = chip.toLowerCase();
           return CategoryChip(
             label: chip,
-            isSelected: _selectedChip == slug,
-            onTap: () => setState(() => _selectedChip = slug),
+            isSelected: selectedChip == slug,
+            onTap: () => onChipSelected(slug),
           );
         }).toList(),
       ),
     );
   }
+}
 
-  Widget _buildStarRatingsSection(ThemeData theme) {
+class _StarRatingsSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _StarRatingsSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     final ratings = [5.0, 4.5, 4.0, 3.5, 2.0, 1.0, 0.0];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,8 +229,15 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
           .toList(),
     );
   }
+}
 
-  Widget _buildBadgesSection(ThemeData theme) {
+class _BadgesSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _BadgesSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     return Wrap(
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.sm,
@@ -207,8 +252,15 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
       ],
     );
   }
+}
 
-  Widget _buildSkeletonSection(ThemeData theme) {
+class _SkeletonSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _SkeletonSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: theme,
       child: const Row(
@@ -221,8 +273,15 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
       ),
     );
   }
+}
 
-  Widget _buildErrorSection(ThemeData theme) {
+class _ErrorSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _ErrorSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: theme,
       child: DecoratedBox(
@@ -238,8 +297,15 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
       ),
     );
   }
+}
 
-  Widget _buildEmptySection(ThemeData theme) {
+class _EmptySection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _EmptySection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: theme,
       child: DecoratedBox(

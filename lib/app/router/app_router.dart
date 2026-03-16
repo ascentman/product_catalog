@@ -3,17 +3,20 @@ import 'package:go_router/go_router.dart';
 import '../../features/product_detail/screens/product_detail_screen.dart';
 import '../../features/product_list/screens/product_list_screen.dart';
 import '../../features/showcase/screens/showcase_screen.dart';
+import 'app_routes.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: AppRoute.home.path,
   debugLogDiagnostics: true,
   routes: [
     GoRoute(
-      path: '/',
+      path: AppRoute.home.path,
+      name: AppRoute.home.name,
       builder: (context, state) => const ProductListScreen(),
       routes: [
         GoRoute(
-          path: 'products/:id',
+          path: AppRoute.productDetail.path,
+          name: AppRoute.productDetail.name,
           // Custom slide-up + fade transition for the detail screen.
           // Pairs with the Hero image transition for a layered feel.
           pageBuilder: (context, state) {
@@ -50,7 +53,8 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
     GoRoute(
-      path: '/showcase',
+      path: AppRoute.showcase.path,
+      name: AppRoute.showcase.name,
       pageBuilder: (context, state) => CustomTransitionPage<void>(
         key: state.pageKey,
         child: const ShowcaseScreen(),

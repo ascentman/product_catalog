@@ -131,21 +131,31 @@ class ProductInfoSection extends StatelessWidget {
           style: AppTextStyles.titleMedium.copyWith(color: textColor),
         ),
         const SizedBox(height: AppSpacing.md),
-        _DetailRow(label: 'Category', value: product.category, isDark: isDark),
-        _DetailRow(label: 'Brand', value: product.brand, isDark: isDark),
-        _DetailRow(
-          label: 'Stock',
-          value: product.stock > 0 ? '${product.stock} units' : 'Out of stock',
-          isDark: isDark,
-        ),
-        _DetailRow(
-          label: 'Rating',
-          value: '${product.rating.toStringAsFixed(1)} / 5.0',
-          isDark: isDark,
-        ),
+        _categoryRow(isDark),
+        _brandRow(isDark),
+        _stockRow(isDark),
+        _ratingRow(isDark),
       ],
     );
   }
+
+  Widget _categoryRow(bool isDark) =>
+      _DetailRow(label: 'Category', value: product.category, isDark: isDark);
+
+  Widget _brandRow(bool isDark) =>
+      _DetailRow(label: 'Brand', value: product.brand, isDark: isDark);
+
+  Widget _stockRow(bool isDark) => _DetailRow(
+        label: 'Stock',
+        value: product.stock > 0 ? '${product.stock} units' : 'Out of stock',
+        isDark: isDark,
+      );
+
+  Widget _ratingRow(bool isDark) => _DetailRow(
+        label: 'Rating',
+        value: '${product.rating.toStringAsFixed(1)} / 5.0',
+        isDark: isDark,
+      );
 }
 
 class _DetailRow extends StatelessWidget {

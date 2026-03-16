@@ -1,4 +1,6 @@
 import '../entities/product.dart';
+import '../entities/products_result.dart';
+export '../entities/products_result.dart';
 
 abstract interface class ProductsRepository {
   Future<ProductsResult> getProducts({
@@ -21,16 +23,4 @@ abstract interface class ProductsRepository {
   });
 
   Future<Product> getProductById(int id);
-}
-
-class ProductsResult {
-  final List<Product> products;
-  final int total;
-  final bool isFromCache;
-
-  const ProductsResult({
-    required this.products,
-    required this.total,
-    this.isFromCache = false,
-  });
 }

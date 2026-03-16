@@ -39,26 +39,41 @@ class _ProductDetailView extends StatelessWidget {
         switch (state.status) {
           case ProductDetailStatus.initial:
           case ProductDetailStatus.loading:
-            return _buildLoading(context);
+            return _DetailLoading(isEmbedded: isEmbedded);
           case ProductDetailStatus.error:
-            return _buildError(context, state);
+            return _DetailError(state: state, isEmbedded: isEmbedded);
           case ProductDetailStatus.loaded:
-            return _buildContent(context, state);
+            return _DetailContent(state: state, isEmbedded: isEmbedded);
         }
       },
     );
   }
+}
 
-  Widget _buildLoading(BuildContext context) {
-    final content = const Center(child: CircularProgressIndicator());
+class _DetailLoading extends StatelessWidget {
+  final bool isEmbedded;
+
+  const _DetailLoading({required this.isEmbedded});
+
+  @override
+  Widget build(BuildContext context) {
+    const content = Center(child: CircularProgressIndicator());
     if (isEmbedded) return content;
     return Scaffold(
       appBar: AppBar(title: const Text('Product')),
       body: content,
     );
   }
+}
 
-  Widget _buildError(BuildContext context, ProductDetailState state) {
+class _DetailError extends StatelessWidget {
+  final ProductDetailState state;
+  final bool isEmbedded;
+
+  const _DetailError({required this.state, required this.isEmbedded});
+
+  @override
+  Widget build(BuildContext context) {
     final cubit = context.read<ProductDetailCubit>();
     final content = ErrorState(
       message: 'Failed to load product',
@@ -73,8 +88,16 @@ class _ProductDetailView extends StatelessWidget {
       body: content,
     );
   }
+}
 
-  Widget _buildContent(BuildContext context, ProductDetailState state) {
+class _DetailContent extends StatelessWidget {
+  final ProductDetailState state;
+  final bool isEmbedded;
+
+  const _DetailContent({required this.state, required this.isEmbedded});
+
+  @override
+  Widget build(BuildContext context) {
     final product = state.product!;
     final heroTag = 'product-image-${product.id}';
 
