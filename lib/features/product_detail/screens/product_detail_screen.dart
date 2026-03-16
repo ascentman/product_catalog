@@ -99,31 +99,20 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final product = state.product!;
-    final heroTag = 'product-image-${product.id}';
+    // On tablet the card and detail panel are visible simultaneously,
+    // so using the shared hero tag would create a duplicate. Only animate
+    // on the phone push transition.
+    final heroTag = isEmbedded ? 'product-image-${product.id}-embedded' : 'product-image-${product.id}';
+
+    final gallery = ImageGallery(
+      images: product.images.isNotEmpty ? product.images : [product.thumbnail],
+      heroTag: heroTag,
+    );
 
     final body = CustomScrollView(
       slivers: [
-        if (!isEmbedded)
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: ImageGallery(
-                images: product.images.isNotEmpty ? product.images : [product.thumbnail],
-                heroTag: heroTag,
-              ),
-            ),
-          )
-        else
-          SliverToBoxAdapter(
-            child: ImageGallery(
-              images: product.images.isNotEmpty ? product.images : [product.thumbnail],
-              heroTag: heroTag,
-            ),
-          ),
-        SliverToBoxAdapter(
-          child: ProductInfoSection(product: product),
-        ),
+        SliverToBoxAdapter(child: gallery),
+        SliverToBoxAdapter(child: ProductInfoSection(product: product)),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
       ],
     );
@@ -132,6 +121,9 @@ class _DetailContent extends StatelessWidget {
       return body;
     }
 
-    return Scaffold(body: body);
+    return Scaffold(
+      appBar: AppBar(),
+      body: body,
+    );
   }
 }

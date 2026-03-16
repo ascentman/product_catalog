@@ -101,7 +101,13 @@ class _ProductListViewState extends State<ProductListView>
 
   @override
   Widget build(BuildContext context) {
-    final crossAxisCount = _getCrossAxisCount(context);
+    return LayoutBuilder(
+      builder: (context, constraints) => _buildScrollView(constraints.maxWidth),
+    );
+  }
+
+  Widget _buildScrollView(double availableWidth) {
+    final crossAxisCount = _getCrossAxisCount(availableWidth);
 
     return CustomScrollView(
       key: const PageStorageKey('product_list'),
@@ -178,10 +184,9 @@ class _ProductListViewState extends State<ProductListView>
     );
   }
 
-  int _getCrossAxisCount(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width >= 1200) return 4;
-    if (width >= 900) return 3;
+  int _getCrossAxisCount(double width) {
+    if (width >= 900) return 4;
+    if (width >= 600) return 3;
     return 2;
   }
 }

@@ -26,8 +26,6 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  int? _selectedProductId;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -36,12 +34,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         phoneLayout: (context) => _PhoneLayout(
           onProductSelected: (product) => context.push(AppRoute.productDetail.location(product.id)),
         ),
-        tabletLayout: (context) => _TabletLayout(
-          selectedProductId: _selectedProductId,
-          onProductSelected: (product) {
-            setState(() => _selectedProductId = product.id);
-          },
-        ),
+        tabletLayout: (context) => const _TabletLayout(),
       ),
     );
   }
@@ -71,14 +64,26 @@ class _PhoneLayout extends StatelessWidget {
   }
 }
 
-class _TabletLayout extends StatelessWidget {
-  final int? selectedProductId;
-  final ValueChanged<Product> onProductSelected;
+class _TabletLayout extends StatefulWidget {
+  const _TabletLayout();
 
-  const _TabletLayout({
-    required this.selectedProductId,
-    required this.onProductSelected,
-  });
+  @override
+  State<_TabletLayout> createState() => _TabletLayoutState();
+}
+
+class _TabletLayoutState extends State<_TabletLayout> {
+  static const double _minPanelWidth = 250;
+  static const double _maxPanelWidth = 600;
+  static const double _defaultPanelWidth = 380;
+
+  double _leftWidth = _defaultPanelWidth;
+  int? _selectedProductId;
+
+  void _onDrag(double delta) {
+    setState(() {
+      _leftWidth = (_leftWidth + delta).clamp(_minPanelWidth, _maxPanelWidth);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,21 +102,70 @@ class _TabletLayout extends StatelessWidget {
       body: Row(
         children: [
           SizedBox(
-            width: 380,
+            width: _leftWidth,
             child: _ProductListBody(
-              onProductSelected: onProductSelected,
+              onProductSelected: (product) {
+                setState(() => _selectedProductId = product.id);
+              },
             ),
           ),
-          const VerticalDivider(width: 1),
+          _PanelDivider(onDrag: _onDrag),
           Expanded(
-            child: selectedProductId != null
+            child: _selectedProductId != null
                 ? ProductDetailScreen(
-                    productId: selectedProductId!,
+                    key: ValueKey(_selectedProductId),
+                    productId: _selectedProductId!,
                     isEmbedded: true,
                   )
                 : const _EmptyDetailPane(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PanelDivider extends StatefulWidget {
+  final ValueChanged<double> onDrag;
+
+  const _PanelDivider({required this.onDrag});
+
+  @override
+  State<_PanelDivider> createState() => _PanelDividerState();
+}
+
+class _PanelDividerState extends State<_PanelDivider> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _hovering
+        ? AppColors.primary
+        : Theme.of(context).dividerColor;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragUpdate: (d) => widget.onDrag(d.delta.dx),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 8,
+          color: color,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: _hovering ? 4 : 1,
+              height: 48,
+              decoration: BoxDecoration(
+                color: _hovering ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
